@@ -1,79 +1,76 @@
-import urllib2
-from bs4 import BeautifulSoup
+from selenium import webdriver
+from selenium.webdriver.common.keys import Keys
 
-URL = 'http://cbseresults.nic.in/class12/cbse1216.asp?regno=%s&schcode=%s&B1=Submit&FrontPage_Form1=true'
+from constants import *
 
-ENGLISH_FILE_PATH = 'english'
-PHYSICS_FILE_PATH = 'phy'
-CHEMISTRY_FILE_PATH = 'chem'
-MATH_FILE_PATH = 'math'
+driver = webdriver.Chrome()
 
-SCHOOL_CODE = '08544'
-MAX_ROLL_NO = 5859301
 def main():
 
-    regno = '5859001'
+    regno = '5858700'
 
     while int(regno) < MAX_ROLL_NO:
+
         try:
-            web = urllib2.urlopen(URL % (regno, SCHOOL_CODE))
-            print web.read()
-            if web.getcode() == 200:
+            driver.get(URL)
 
-                print "HOLLA"
+            student_no_login = driver.find_element_by_xpath("/html/body/table[4]/tbody/tr[1]/td[2]/input")
 
-                bs = BeautifulSoup(web.read(), 'html.parser')
+            school_no_login = driver.find_element_by_xpath("/html/body/table[4]/tbody/tr[2]/td[2]/input")
 
-                table = bs.find_all('table', bordercolor='#000000', recursive=True)[0]
 
-                english_table = table.contents[1]
-                physics_table = table.contents[2]
-                chemistry_table = table.contents[3]
-                math_table = table.contents[4]
+            student_no_login.send_keys(regno)
+            school_no_login.send_keys(SCHOOL_CODE)
 
-                english_row = None
-                physics_row = None
-                chem_row = None
-                math_row = None
+            school_no_login.send_keys(Keys.RETURN)
 
-                if english_table.contents[1] == 'ENGLISH CORE':
-                    english_row = int(english_table.contents[2])
 
-                if physics_table.contents[1] == 'PHYSICS':
-                    physics_row = int(physics_table.contents[2])
 
-                if chemistry_table.contents[1] == 'CHEMISTRY':
-                    chem_row = int(chemistry_table.contents[2])
+            assert (not(("Result Not Found" in driver.page_source)) and not(("Access denied" in driver.page_source)))
 
-                if math_table.contents[1] == 'MATHEMATICS':
-                    math_row = int(math_table.contents[2])
 
-                if english_row:
 
-                    with open(ENGLISH_FILE_PATH,'a') as f:
-                        f.write(str(english_row))
+            english_name = driver.find_element_by_xpath(ENGLISH_NAME_XPATH).text
 
-                if physics_row:
+            phy_name = driver.find_element_by_xpath(PHY_NAME_XPATH).text
 
-                    with open(PHYSICS_FILE_PATH, 'a') as f:
-                        f.write(str(physics_row))
+            chem_name = driver.find_element_by_xpath(CHEM_NAME_XPATH).text
 
-                if chem_row:
+            math_name = driver.find_element_by_xpath(MATH_NAME_XPATH).text
 
-                    with open(CHEMISTRY_FILE_PATH, 'a') as f:
-                        f.write(str(chem_row))
 
-                if math_row:
+            if english_name == "ENGLISH CORE":
 
-                    with open(MATH_FILE_PATH, 'a') as f:
-                        f.write(str(math_row))
+                marks = int(filter(str.isdigit, str(driver.find_element_by_xpath(ENGLISH_MARK_XPATH).text)))
 
-                print(english_row, math_row, physics_row, chem_row)
+                with open(ENGLISH_FILE_PATH, 'a') as f:
+                    f.write(str(marks) + "\n")
 
-        except IndexError:
+            if phy_name == "PHYSICS":
+
+                marks = int(filter(str.isdigit, str(driver.find_element_by_xpath(PHY_MARK_XPATH).text)))
+
+                with open(PHYSICS_FILE_PATH, 'a') as f:
+                    f.write(str(marks) + "\n")
+
+            if chem_name == "CHEMISTRY":
+
+                marks = int(filter(str.isdigit, str(driver.find_element_by_xpath(CHEM_MARK_XPATH).text)))
+
+                with open(CHEMISTRY_FILE_PATH, 'a') as f:
+                    f.write(str(marks) + "\n")
+
+            if math_name == "MATHEMATICS":
+
+                marks = int(filter(str.isdigit, str(driver.find_element_by_xpath(MATH_MARK_XPATH).text)))
+
+                with open(MATH_FILE_PATH, 'a') as f:
+                    f.write(str(marks) + "\n")
+
+        except AssertionError:
             print "NO RESULT"
 
-        regno = str(int(regno) + 1).zfill(7)
+        regno = str(int(regno) + 1)
 
 if __name__ == '__main__':
     main()
